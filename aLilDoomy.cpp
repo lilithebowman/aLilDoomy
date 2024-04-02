@@ -30,7 +30,7 @@ typedef struct {
     int w, s, a, d; //move up, down, left, right
     int sl, sr;     // strafe left, right
     int m;          // move up, down look up, down
-}keys; keys K;
+}keys; volatile keys K;
 
 typedef struct {
     float cos[360];
@@ -41,12 +41,16 @@ typedef struct {
     int x, y, z;    // player position
     int a;          // player angle of rotation l/r
     int l;          // variable to look up and down
-}player; player P;
+}player; volatile player P;
 
 typedef struct {
     int width;
     int height;
 }displayBuffer; displayBuffer DBuf;
+
+volatile HWND windowRef;
+volatile HDC displayContextRef;
+
 
 // Init function
 void init(HWND hWnd) {
@@ -59,32 +63,6 @@ void init(HWND hWnd) {
 
     // init player values
     P.x = 70; P.y = -110; P.z = 20; P.a = 0; P.l = 0;
-}
-
-void KeysDown(unsigned char key, int x, int y) {
-    if (key == 'w' == 1) { K.w = 1; }
-    if (key == 's' == 1) { K.s = 1; }
-
-    if (key == 'a' == 1) { K.a = 1; }
-    if (key == 'd' == 1) { K.d = 1; }
-
-    if (key == 'm' == 1) { K.m = 1; }
-
-    if (key == ',' == 1) { K.sl = 1; }
-    if (key == '.' == 1) { K.sr = 1; }
-}
-
-void KeysUp(unsigned char key, int x, int y) {
-    if (key == 'w' == 1) { K.w = 0; }
-    if (key == 's' == 1) { K.s = 0; }
-
-    if (key == 'a' == 1) { K.a = 0; }
-    if (key == 'd' == 1) { K.d = 0; }
-
-    if (key == 'm' == 1) { K.m = 0; }
-
-    if (key == ',' == 1) { K.sl = 0; }
-    if (key == '.' == 1) { K.sr = 0; }
 }
 
 void draw3D(HDC memDC, int width, int height) {
@@ -104,15 +82,15 @@ void draw3D(HDC memDC, int width, int height) {
     // world Y position
     wy[0] = y1 * CS + x1 * SN;
     wy[1] = y2 * CS + x2 * SN;
-    // world Z position
-    wz[0] = 0 - P.z;
-    wz[1] = 0 - P.z;
+    // world Z height
+    wz[0] = 0 - P.z + ((P.l * wy[0]) / 32.0);
+    wz[1] = 0 - P.z + ((P.l * wy[1]) / 32.0);
 
     // calculate screen X and Y position
-    wx[0] = wx[0] * 200 / wy[0] + (width / 2);
-    wy[0] = wz[0] * 200 / wy[0] + (height / 2);
-    wx[1] = wx[1] * 200 / wy[1] + (width / 2);
-    wy[1] = wz[1] * 200 / wy[1] + (height / 2);
+    if (wy[0] > 0) wx[0] = wx[0] * 200 / wy[0] + (width / 2);
+    if (wy[0] > 0) wy[0] = wz[0] * 200 / wy[0] + (height / 2);
+    if (wy[1] > 0) wx[1] = wx[1] * 200 / wy[1] + (width / 2);
+    if (wy[1] > 0) wy[1] = wz[1] * 200 / wy[1] + (height / 2);
 
     // don't draw off screen points
     if (
@@ -135,27 +113,19 @@ void draw3D(HDC memDC, int width, int height) {
     }
 }
 
-// Main Draw Function
-void PaintScreen(HWND hWnd, HDC hdc) {
-    // init display buffer
-    RECT rect;
-    if (GetWindowRect(hWnd, &rect)) {
-        DBuf.width = rect.right - rect.left;
-        DBuf.height = rect.bottom - rect.top;
-    }
+void getKeys() {
+    K.w = GetAsyncKeyState(0x57); // w
+    K.a = GetAsyncKeyState(0x41); // a
+    K.s = GetAsyncKeyState(0x53); // s
+    K.d = GetAsyncKeyState(0x44); // d
+    K.d = 1;
 
-    int width = DBuf.width / 4; int height = DBuf.height / 4;
+    K.sl = GetAsyncKeyState(VK_OEM_COMMA); // comma
+    K.sr = GetAsyncKeyState(VK_OEM_PERIOD); // period
 
-    HDC memDC = CreateCompatibleDC(hdc);
-    HBITMAP memBM = CreateCompatibleBitmap(hdc, width , height);
+    K.m = GetAsyncKeyState(0x4D); // m
 
-    SelectObject(memDC, memBM);
-
-    draw3D(memDC, width, height);
-
-    StretchBlt(hdc, 0, 0, DBuf.width, DBuf.height, memDC, 0, 0, width, height, SRCCOPY);   // Copy memory buffer to window 2x stretched
-
-    return;
+    //OutputDebugStringW(L"*");
 }
 
 void movePlayer() {
@@ -176,9 +146,49 @@ void movePlayer() {
     if (K.s == 1 && K.m == 1) { P.z += 4; }
 }
 
+// Main Draw Function
+void PaintScreen(HWND hWnd, HDC hdc) {
+    RECT windowRect;
+    int width, height;
+    // init display buffer
+    if (GetWindowRect(hWnd, &windowRect)) {
+        DBuf.width = windowRect.right - windowRect.left;
+        DBuf.height = windowRect.bottom - windowRect.top;
+    }
+
+    width = DBuf.width / 4; height = DBuf.height / 4;
+
+    HDC memDC = CreateCompatibleDC(hdc);
+    HBITMAP memBM = CreateCompatibleBitmap(hdc, width , height);
+
+    SelectObject(memDC, memBM);
+
+    getKeys();
+
+    movePlayer();
+
+    draw3D(memDC, width, height);
+
+    StretchBlt(hdc, 0, 0, DBuf.width, DBuf.height, memDC, 0, 0, width, height, SRCCOPY);   // Copy memory buffer to window 2x stretched
+
+    DeleteDC(memDC);
+    DeleteObject(memBM);
+}
 
 
 
+
+
+
+DWORD WINAPI MainThread(LPVOID lpParam) {
+    OutputDebugStringW(L"Spawned PaintScreen thread");
+
+    while (true) {
+
+        PaintScreen(windowRef, displayContextRef);
+
+    }
+}
 
 int APIENTRY wWinMain(_In_ HINSTANCE hInstance,
                      _In_opt_ HINSTANCE hPrevInstance,
@@ -189,6 +199,14 @@ int APIENTRY wWinMain(_In_ HINSTANCE hInstance,
     UNREFERENCED_PARAMETER(lpCmdLine);
 
     // TODO: Place code here.
+    CreateThread(
+        NULL,                   // default security attributes
+        0,                      // use default stack size  
+        MainThread,             // thread function name
+        NULL,                   // argument to thread function 
+        0,                      // use default creation flags 
+        NULL                    // returns the thread identifier 
+    );
 
     // Initialize global strings
     LoadStringW(hInstance, IDS_APP_TITLE, szTitle, MAX_LOADSTRING);
@@ -206,8 +224,7 @@ int APIENTRY wWinMain(_In_ HINSTANCE hInstance,
     MSG msg;
 
     // Main message loop:
-    while (GetMessage(&msg, nullptr, 0, 0))
-    {
+    while (GetMessage(&msg, nullptr, 0, 0)) {
         if (!TranslateAccelerator(msg.hwnd, hAccelTable, &msg))
         {
             TranslateMessage(&msg);
@@ -285,10 +302,13 @@ BOOL InitInstance(HINSTANCE hInstance, int nCmdShow)
 //  WM_DESTROY  - post a quit message and return
 //
 //
-LRESULT CALLBACK WndProc(HWND hWnd, UINT message, WPARAM wParam, LPARAM lParam)
-{
-    switch (message)
-    {
+LRESULT CALLBACK WndProc(HWND hWnd, UINT message, WPARAM wParam, LPARAM lParam) {
+    PAINTSTRUCT ps;
+    HDC hdc = BeginPaint(hWnd, &ps);
+    windowRef = hWnd;
+    displayContextRef = hdc;
+
+    switch (message) {
     case WM_COMMAND:
         {
             int wmId = LOWORD(wParam);
@@ -308,13 +328,7 @@ LRESULT CALLBACK WndProc(HWND hWnd, UINT message, WPARAM wParam, LPARAM lParam)
         break;
     case WM_PAINT:
         {
-            PAINTSTRUCT ps;
-            HDC hdc = BeginPaint(hWnd, &ps);
-            // TODO: Add any drawing code that uses hdc here...
-
-            PaintScreen(hWnd, hdc);
-
-            EndPaint(hWnd, &ps);
+            PaintScreen(windowRef, displayContextRef);
         }
         break;
     case WM_DESTROY:
@@ -323,6 +337,7 @@ LRESULT CALLBACK WndProc(HWND hWnd, UINT message, WPARAM wParam, LPARAM lParam)
     default:
         return DefWindowProc(hWnd, message, wParam, lParam);
     }
+
     return 0;
 }
 
