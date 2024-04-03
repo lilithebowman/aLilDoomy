@@ -1,12 +1,12 @@
 ﻿  aLilDoomy.cpp
-D:\Source\aLilDoomy\aLilDoomy.cpp(60,23): warning C4244: '=': conversion from 'double' to 'float', possible loss of data
-D:\Source\aLilDoomy\aLilDoomy.cpp(61,23): warning C4244: '=': conversion from 'double' to 'float', possible loss of data
-D:\Source\aLilDoomy\aLilDoomy.cpp(80,21): warning C4244: '=': conversion from 'float' to 'int', possible loss of data
-D:\Source\aLilDoomy\aLilDoomy.cpp(81,21): warning C4244: '=': conversion from 'float' to 'int', possible loss of data
-D:\Source\aLilDoomy\aLilDoomy.cpp(83,21): warning C4244: '=': conversion from 'float' to 'int', possible loss of data
-D:\Source\aLilDoomy\aLilDoomy.cpp(84,21): warning C4244: '=': conversion from 'float' to 'int', possible loss of data
-D:\Source\aLilDoomy\aLilDoomy.cpp(86,21): warning C4244: '=': conversion from 'double' to 'int', possible loss of data
-D:\Source\aLilDoomy\aLilDoomy.cpp(87,21): warning C4244: '=': conversion from 'double' to 'int', possible loss of data
-D:\Source\aLilDoomy\aLilDoomy.cpp(135,12): warning C4244: 'initializing': conversion from 'float' to 'int', possible loss of data
-D:\Source\aLilDoomy\aLilDoomy.cpp(136,12): warning C4244: 'initializing': conversion from 'float' to 'int', possible loss of data
+D:\Source\aLilDoomy\aLilDoomy.cpp(67,21): warning C4244: '=': conversion from 'float' to 'int', possible loss of data
+D:\Source\aLilDoomy\aLilDoomy.cpp(68,21): warning C4244: '=': conversion from 'float' to 'int', possible loss of data
+D:\Source\aLilDoomy\aLilDoomy.cpp(70,21): warning C4244: '=': conversion from 'float' to 'int', possible loss of data
+D:\Source\aLilDoomy\aLilDoomy.cpp(71,21): warning C4244: '=': conversion from 'float' to 'int', possible loss of data
+D:\Source\aLilDoomy\aLilDoomy.cpp(73,21): warning C4244: '=': conversion from 'double' to 'int', possible loss of data
+D:\Source\aLilDoomy\aLilDoomy.cpp(74,21): warning C4244: '=': conversion from 'double' to 'int', possible loss of data
+D:\Source\aLilDoomy\aLilDoomy.cpp(121,12): warning C4244: 'initializing': conversion from 'float' to 'int', possible loss of data
+D:\Source\aLilDoomy\aLilDoomy.cpp(122,12): warning C4244: 'initializing': conversion from 'float' to 'int', possible loss of data
+D:\Source\aLilDoomy\aLilDoomy.cpp(177,23): warning C4244: '=': conversion from 'double' to 'float', possible loss of data
+D:\Source\aLilDoomy\aLilDoomy.cpp(178,23): warning C4244: '=': conversion from 'double' to 'float', possible loss of data
   aLilDoomy.vcxproj -> D:\Source\aLilDoomy\x64\Debug\aLilDoomy.exe

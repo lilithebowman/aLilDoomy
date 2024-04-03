@@ -52,19 +52,6 @@ volatile HWND windowRef;
 volatile HDC displayContextRef;
 
 
-// Init function
-void init(HWND hWnd) {
-    int x;
-    // store sin/cos in degrees
-    for (x = 0; x < 350; x++) {
-        M.cos[x] = cos(x / 180.0 * M_PI);
-        M.sin[x] = sin(x / 180.0 * M_PI);
-    }
-
-    // init player values
-    P.x = 70; P.y = -110; P.z = 20; P.a = 0; P.l = 0;
-}
-
 void draw3D(HDC memDC, int width, int height) {
     // SetPixel(memDC, x, y, RGB(127, x, y));
     int wx[4], wy[4], wz[4];
@@ -114,16 +101,15 @@ void draw3D(HDC memDC, int width, int height) {
 }
 
 void getKeys() {
-    K.w = GetAsyncKeyState(0x57); // w
-    K.a = GetAsyncKeyState(0x41); // a
-    K.s = GetAsyncKeyState(0x53); // s
-    K.d = GetAsyncKeyState(0x44); // d
-    K.d = 1;
+    K.w = GetKeyState(0x57); // w key code
+    K.a = GetKeyState(0x41); // a key code
+    K.s = GetKeyState(0x53); // s key code
+    K.d = GetKeyState(0x44); // d key code
 
-    K.sl = GetAsyncKeyState(VK_OEM_COMMA); // comma
-    K.sr = GetAsyncKeyState(VK_OEM_PERIOD); // period
+    K.sl = GetKeyState(VK_OEM_COMMA); // comma key code
+    K.sr = GetKeyState(VK_OEM_PERIOD); // period key code
 
-    K.m = GetAsyncKeyState(0x4D); // m
+    K.m = GetKeyState(0x4D); // m key code
 
     //OutputDebugStringW(L"*");
 }
@@ -163,10 +149,6 @@ void PaintScreen(HWND hWnd, HDC hdc) {
 
     SelectObject(memDC, memBM);
 
-    getKeys();
-
-    movePlayer();
-
     draw3D(memDC, width, height);
 
     StretchBlt(hdc, 0, 0, DBuf.width, DBuf.height, memDC, 0, 0, width, height, SRCCOPY);   // Copy memory buffer to window 2x stretched
@@ -175,10 +157,7 @@ void PaintScreen(HWND hWnd, HDC hdc) {
     DeleteObject(memBM);
 }
 
-
-
-
-
+HANDLE threadHandle;
 
 DWORD WINAPI MainThread(LPVOID lpParam) {
     OutputDebugStringW(L"Spawned PaintScreen thread");
@@ -190,16 +169,20 @@ DWORD WINAPI MainThread(LPVOID lpParam) {
     }
 }
 
-int APIENTRY wWinMain(_In_ HINSTANCE hInstance,
-                     _In_opt_ HINSTANCE hPrevInstance,
-                     _In_ LPWSTR    lpCmdLine,
-                     _In_ int       nCmdShow)
-{
-    UNREFERENCED_PARAMETER(hPrevInstance);
-    UNREFERENCED_PARAMETER(lpCmdLine);
+// Init function
+void init(HWND hWnd) {
+    int x;
+    // store sin/cos in degrees
+    for (x = 0; x < 350; x++) {
+        M.cos[x] = cos(x / 180.0 * M_PI);
+        M.sin[x] = sin(x / 180.0 * M_PI);
+    }
 
-    // TODO: Place code here.
-    CreateThread(
+    // init player values
+    P.x = 70; P.y = -110; P.z = 20; P.a = 0; P.l = 0;
+
+    // Launch the display thread
+    threadHandle = CreateThread(
         NULL,                   // default security attributes
         0,                      // use default stack size  
         MainThread,             // thread function name
@@ -207,6 +190,21 @@ int APIENTRY wWinMain(_In_ HINSTANCE hInstance,
         0,                      // use default creation flags 
         NULL                    // returns the thread identifier 
     );
+}
+
+
+
+
+
+
+
+int APIENTRY wWinMain(_In_ HINSTANCE hInstance,
+                     _In_opt_ HINSTANCE hPrevInstance,
+                     _In_ LPWSTR    lpCmdLine,
+                     _In_ int       nCmdShow)
+{
+    UNREFERENCED_PARAMETER(hPrevInstance);
+    UNREFERENCED_PARAMETER(lpCmdLine);
 
     // Initialize global strings
     LoadStringW(hInstance, IDS_APP_TITLE, szTitle, MAX_LOADSTRING);
@@ -303,18 +301,17 @@ BOOL InitInstance(HINSTANCE hInstance, int nCmdShow)
 //
 //
 LRESULT CALLBACK WndProc(HWND hWnd, UINT message, WPARAM wParam, LPARAM lParam) {
-    PAINTSTRUCT ps;
-    HDC hdc = BeginPaint(hWnd, &ps);
-    windowRef = hWnd;
-    displayContextRef = hdc;
-
     switch (message) {
-    case WM_COMMAND:
-        {
+    case WM_KEYDOWN: {
+            K.w = K.a = K.s = K.d = K.sl = K.sr = K.m = 0;
+            getKeys();
+            movePlayer();
+        }
+        break;
+    case WM_COMMAND: {
             int wmId = LOWORD(wParam);
             // Parse the menu selections:
-            switch (wmId)
-            {
+            switch (wmId) {
             case IDM_ABOUT:
                 DialogBox(hInst, MAKEINTRESOURCE(IDD_ABOUTBOX), hWnd, About);
                 break;
@@ -326,9 +323,13 @@ LRESULT CALLBACK WndProc(HWND hWnd, UINT message, WPARAM wParam, LPARAM lParam) 
             }
         }
         break;
-    case WM_PAINT:
-        {
+    case WM_PAINT: {
+            PAINTSTRUCT ps;
+            HDC hdc = BeginPaint(hWnd, &ps);
+            windowRef = hWnd;
+            displayContextRef = hdc;
             PaintScreen(windowRef, displayContextRef);
+            EndPaint(hWnd, &ps);
         }
         break;
     case WM_DESTROY:
